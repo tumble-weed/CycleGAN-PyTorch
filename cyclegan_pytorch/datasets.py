@@ -38,7 +38,10 @@ class ImageDataset(Dataset):
             item_B = self.transform(Image.open(self.files_B[random.randint(0, len(self.files_B) - 1)]))
         else:
             item_B = self.transform(Image.open(self.files_B[index % len(self.files_B)]))
-
+        if item_A.shape[0] == 1:
+            item_A = item_A.repeat(3,1,1)
+        if item_B.shape[0] == 1:
+            item_B = item_B.repeat(3,1,1)
         return {"A": item_A, "B": item_B}
 
     def __len__(self):
