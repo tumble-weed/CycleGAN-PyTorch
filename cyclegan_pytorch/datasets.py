@@ -22,7 +22,12 @@ import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
 
-
+def convert_gray_to_rgb(im_pil):
+    if im_pil.mode == 'L':
+        im_np = np.array(im_pil)
+        im_np = np.tile(im_np[:,:,None],(1,1,3))
+        im_pil = Image.fromarray(im_np)
+    return im_pil
 class ImageDataset(Dataset):
     def __init__(self, root, transform=None, unaligned=False, mode="train"):
         self.transform = transform
@@ -32,16 +37,19 @@ class ImageDataset(Dataset):
         self.files_B = sorted(glob.glob(os.path.join(root, f"{mode}/B") + "/*.*"))
 
     def __getitem__(self, index):
-        item_A = self.transform(Image.open(self.files_A[index % len(self.files_A)]))
-
+        im_pil_a = Image.open(self.files_A[index % len(self.files_A)])
+        im_pil_a = convert_gray_to_rgb(im_pil_a)
+        item_A = self.transform(im_pil_a)
+        
         if self.unaligned:
-            item_B = self.transform(Image.open(self.files_B[random.randint(0, len(self.files_B) - 1)]))
+            im_pil_b = Image.open(self.files_B[random.randint(0, len(self.files_B) - 1)])
+            im_pil_b = convert_gray_to_rgb(im_pil_b)
+            item_B = self.transform(im_pil_b)
         else:
-            item_B = self.transform(Image.open(self.files_B[index % len(self.files_B)]))
-        if item_A.shape[0] == 1:
-            item_A = item_A.repeat(3,1,1)
-        if item_B.shape[0] == 1:
-            item_B = item_B.repeat(3,1,1)
+            im_pil_b = Image.open(self.files_B[index % len(self.files_B)])
+            im_pil_b = convert_gray_to_rgb(im_pil_b)
+            item_B = self.transform(im_pil_b)
+            
         return {"A": item_A, "B": item_B}
 
     def __len__(self):
